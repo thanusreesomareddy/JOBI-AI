@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jobi AI — Career Coach</title>
+  <link rel="stylesheet" href="/static/app.css?v=8" />
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="logo">Jobi AI</div>
+      <p class="tagline">Upload your resume → get a training plan → live mock interviews</p>
+    </header>
+
+    <nav class="steps" aria-label="Progress">
+      <div class="step active" data-step="1"><span>1</span> Upload</div>
+      <div class="step" data-step="2"><span>2</span> Plan</div>
+      <div class="step" data-step="3"><span>3</span> Read</div>
+      <div class="step" data-step="4"><span>4</span> Interview</div>
+      <div class="step" data-step="5"><span>5</span> Results</div>
+    </nav>
+
+    <main id="app">
+      <!-- Step 1: Upload -->
+      <section id="screen-upload" class="card screen active">
+        <h1>Upload your resume</h1>
+        <p class="hint">PDF only. We’ll read it and build a personalized practice plan.</p>
+
+        <label class="upload-zone" id="drop-zone">
+          <input type="file" id="file-input" accept=".pdf" hidden />
+          <span class="upload-icon">📄</span>
+          <strong>Click to choose a PDF</strong>
+          <span id="file-name">or drag and drop here</span>
+        </label>
+
+        <button type="button" class="btn primary" id="btn-upload" disabled>Continue</button>
+        <p class="error" id="upload-error" hidden></p>
+      </section>
+
+      <!-- Step 2: Processing -->
+      <section id="screen-processing" class="card screen">
+        <h1>Setting things up…</h1>
+        <ul class="checklist" id="processing-list">
+          <li id="proc-upload" class="done">Resume uploaded</li>
+          <li id="proc-analyze">Analyzing skills &amp; target role…</li>
+          <li id="proc-plan">Creating your training plan…</li>
+        </ul>
+        <div class="spinner" id="spinner"></div>
+        <p class="hint">This usually takes 1–2 minutes. Please keep this tab open.</p>
+        <p class="error" id="processing-error" hidden></p>
+      </section>
+
+      <!-- Step 2b: Plan ready -->
+      <section id="screen-plan" class="card screen">
+        <h1>Your plan is ready</h1>
+        <p class="role-badge" id="plan-role"></p>
+        <p class="hint" id="plan-summary"></p>
+
+        <p class="field-label">Pick a day to practice</p>
+        <div id="day-cards" class="day-cards"></div>
+        <select id="day-select" hidden aria-hidden="true"></select>
+
+        <label class="plan-option">
+          <input type="checkbox" id="opt-adapt-plan" checked />
+          <span>
+            <strong>Personalize upcoming days</strong>
+            <small>When you finish a day, Days ahead update from your scores. Turn off to keep the original plan.</small>
+          </span>
+        </label>
+
+        <button type="button" class="btn primary" id="btn-start-day">Start day</button>
+        <button type="button" class="btn ghost plan-secondary-btn" id="btn-view-focus" hidden>
+          📊 View focus areas
+        </button>
+        <button type="button" class="btn ghost" id="btn-new-resume">Upload a different resume</button>
+      </section>
+
+      <!-- Focus areas (separate from plan) -->
+      <section id="screen-focus" class="card screen wide">
+        <h1>Focus areas</h1>
+        <p class="hint">Topics that came up most often in your feedback — the number is how many times we flagged it.</p>
+        <ul id="focus-areas-list" class="focus-areas-list"></ul>
+        <p class="hint empty-focus" id="focus-empty" hidden>No focus areas yet. Complete a practice day to see patterns here.</p>
+        <button type="button" class="btn primary" id="btn-back-focus-plan">← Back to plan</button>
+      </section>
+
+      <!-- Step 3: Reading -->
+      <section id="screen-reading" class="card screen wide">
+        <div class="practice-header">
+          <div>
+            <p class="eyebrow" id="reading-day-label">Day 1</p>
+            <h1 id="reading-title">Today’s reading</h1>
+          </div>
+          <p class="progress-pill" id="reading-time-pill">10 min read</p>
+        </div>
+
+        <div class="reading-panel">
+          <p class="reading-intro">Review today’s material before the practice questions.</p>
+          <div class="reading-content" id="reading-content"></div>
+        </div>
+
+        <div class="reading-actions">
+          <button type="button" class="btn ghost" id="btn-back-plan">← Back to plan</button>
+          <div class="reading-actions-right">
+            <button type="button" class="btn ghost" id="btn-skip-reading">Skip to interview</button>
+            <button type="button" class="btn primary" id="btn-start-practice">Start interview →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 4: Live interview -->
+      <section id="screen-practice" class="card screen wide interview-screen">
+        <div class="practice-header interview-screen-header">
+          <div>
+            <p class="eyebrow" id="practice-day-label">Day 1</p>
+            <h1 id="practice-title">Live interview</h1>
+          </div>
+          <button type="button" class="link-btn interview-back-link" id="btn-back-reading">← Reading</button>
+        </div>
+
+        <div class="interview-progress-wrap">
+          <div class="interview-progress-track" aria-hidden="true">
+            <div class="interview-progress-fill" id="interview-progress-bar"></div>
+          </div>
+          <p class="interview-progress-label" id="question-progress">Ready to begin</p>
+        </div>
+
+        <div class="interview-layout">
+          <div class="interview-main">
+            <div class="interview-hero">
+              <div class="interviewer-avatar-wrap" id="interviewer-avatar-wrap" data-state="idle">
+                <img id="interviewer-avatar" src="/static/img/interviewer-male.png" alt="Your interviewer" width="200" height="200" />
+                <span class="interviewer-speaking-ring" aria-hidden="true"></span>
+              </div>
+              <p class="interviewer-name" id="interviewer-name">Alex</p>
+              <p class="interviewer-role">Your practice interviewer</p>
+              <p class="hero-status" id="interview-status" data-phase="idle">Tap the mic to join</p>
+            </div>
+
+            <p class="topic-preview-short" id="topic-preview-card">
+              <span id="topic-preview-text"></span>
+            </p>
+
+            <div class="interview-settings-row">
+              <button type="button" class="tts-toggle on" id="btn-tts-toggle" title="Interviewer speaks aloud">
+                🔊 Voice on
+              </button>
+              <select id="tts-voice-select" class="tts-voice-select" title="Interviewer voice" aria-label="Interviewer voice"></select>
+            </div>
+
+            <div id="interview-chat" class="interview-chat"></div>
+
+            <div class="interview-action-area" id="interview-action-area" data-phase="live">
+            <div id="interview-controls" class="interview-controls">
+              <p class="hint speak-hint-compact" id="speak-hint">Tap Join, then speak naturally — pause when done.</p>
+              <div class="voice-assistant-panel" id="voice-assistant-panel">
+                <div class="voice-console-row">
+                  <div class="voice-console-primary">
+                    <button type="button" class="btn interview-join-mic" id="btn-join-interview">🎤 Join interview</button>
+                    <div class="voice-orb" id="voice-orb" data-phase="idle" hidden aria-live="polite">
+                      <span class="voice-orb-ring" aria-hidden="true"></span>
+                      <span class="voice-orb-core" aria-hidden="true">🎙️</span>
+                    </div>
+                  </div>
+                  <div class="interview-session-actions" id="interview-session-actions" hidden>
+                    <button type="button" class="btn session-chip" id="btn-pause-interview">Pause</button>
+                    <button type="button" class="btn session-chip" id="btn-resume-interview" hidden>Resume</button>
+                    <button type="button" class="btn session-chip" id="btn-end-interview">End</button>
+                  </div>
+                </div>
+                <p class="voice-phase-label" id="recording-status" hidden></p>
+                <p class="live-transcript" id="live-transcript" hidden></p>
+              </div>
+              <label class="field interview-type-fallback">
+                <span>Or type your response</span>
+                <div class="interview-type-row">
+                  <input type="text" id="interview-type-input" placeholder="Type what you would say…" />
+                  <button type="button" class="btn primary" id="btn-interview-send">Send</button>
+                </div>
+              </label>
+            </div>
+
+            <div id="complete-panel" class="interview-complete-bar">
+              <p class="interview-complete-msg">🎉 Interview complete — loading your results…</p>
+            </div>
+            </div>
+
+            <p class="error" id="practice-error" hidden></p>
+          </div>
+
+          <aside class="feedback-sidebar" id="feedback-sidebar" aria-label="Interview feedback">
+            <div class="feedback-sidebar-header">
+              <h2 class="feedback-sidebar-title">Feedback</h2>
+              <p class="feedback-scored-label" id="feedback-scored-label">Waiting for your first answer</p>
+            </div>
+
+            <div class="feedback-empty" id="feedback-empty">
+              <p>Feedback appears here after each answer.</p>
+              <p class="feedback-empty-hint">Speak or type a response — you'll get a quick score and tips right away.</p>
+            </div>
+
+            <div class="feedback-latest" id="feedback-latest" hidden>
+              <p class="feedback-latest-eyebrow" id="feedback-latest-topic">Latest</p>
+              <div class="feedback-score-ring" id="feedback-score-ring" data-tier="mid">
+                <span class="feedback-score-value" id="feedback-score-value">0</span>
+                <span class="feedback-score-max">/10</span>
+              </div>
+              <p class="feedback-latest-text" id="feedback-latest-text"></p>
+              <div class="feedback-lists">
+                <div class="feedback-list-block" id="feedback-strengths-block" hidden>
+                  <p class="feedback-list-title">Strengths</p>
+                  <ul class="feedback-list feedback-list-good" id="feedback-strengths-list"></ul>
+                </div>
+                <div class="feedback-list-block" id="feedback-improvements-block" hidden>
+                  <p class="feedback-list-title">Improve</p>
+                  <ul class="feedback-list feedback-list-warn" id="feedback-improvements-list"></ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="feedback-history" id="feedback-history"></div>
+
+            <div class="feedback-final" id="feedback-final" hidden>
+              <p class="feedback-final-eyebrow">Session summary</p>
+              <p class="feedback-final-headline" id="summary-headline"></p>
+              <p class="feedback-final-avg" id="summary-avg"></p>
+              <p class="feedback-final-rec" id="summary-recommendation"></p>
+              <div class="feedback-lists">
+                <div class="feedback-list-block" id="summary-strengths-block" hidden>
+                  <p class="feedback-list-title">Overall strengths</p>
+                  <ul class="feedback-list feedback-list-good" id="summary-strengths-list"></ul>
+                </div>
+                <div class="feedback-list-block" id="summary-improvements-block" hidden>
+                  <p class="feedback-list-title">Focus next</p>
+                  <ul class="feedback-list feedback-list-warn" id="summary-improvements-list"></ul>
+                </div>
+              </div>
+              <p class="adaptation-notice" id="adaptation-notice" hidden></p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- Step 5: Final results -->
+      <section id="screen-results" class="card screen wide results-screen">
+        <div class="results-header">
+          <div>
+            <p class="eyebrow" id="results-day-label">Day 1</p>
+            <h1 id="results-title">Your interview results</h1>
+          </div>
+        </div>
+
+        <div class="results-hero">
+          <div class="results-score-ring" id="results-score-ring" data-tier="mid">
+            <span class="results-score-value" id="results-avg-score">0</span>
+            <span class="results-score-max">/10</span>
+          </div>
+          <p class="results-score-label">Session average</p>
+          <p class="results-headline" id="results-headline"></p>
+          <p class="results-recommendation" id="results-recommendation"></p>
+        </div>
+
+        <div class="results-columns">
+          <div class="results-block" id="results-strengths-block" hidden>
+            <h2 class="results-block-title">Overall strengths</h2>
+            <ul class="feedback-list feedback-list-good" id="results-strengths-list"></ul>
+          </div>
+          <div class="results-block" id="results-improvements-block" hidden>
+            <h2 class="results-block-title">Focus next</h2>
+            <ul class="feedback-list feedback-list-warn" id="results-improvements-list"></ul>
+          </div>
+        </div>
+
+        <div class="results-topics-wrap" id="results-topics-wrap" hidden>
+          <h2 class="results-block-title">Topic scores</h2>
+          <div class="results-topics" id="results-topics"></div>
+        </div>
+
+        <p class="adaptation-notice results-adaptation" id="results-adaptation" hidden></p>
+
+        <div class="results-actions">
+          <button type="button" class="btn primary" id="btn-results-plan">Practice another day</button>
+          <button type="button" class="btn ghost" id="btn-results-back">Back to plan</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a href="/docs" target="_blank" rel="noopener">Developer API docs</a>
+    </footer>
+  </div>
+
+  <script src="/static/app.js?v=8"></script>
+</body>
+</html>
