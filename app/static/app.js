@@ -86,6 +86,21 @@ function clearStorage() {
   state.sessionId = null;
 }
 
+function applyIntegrationParams() {
+  const params = new URLSearchParams(window.location.search);
+  const candidateId = params.get("candidate_id");
+  const resumeId = params.get("resume_id");
+  if (candidateId) {
+    state.candidateId = candidateId;
+  }
+  if (resumeId) {
+    state.resumeId = resumeId;
+  }
+  if (candidateId || resumeId) {
+    saveIds();
+  }
+}
+
 function scoreTier(score) {
   if (score == null) return "";
   if (score >= 8) return "score-high";
@@ -1635,5 +1650,6 @@ async function initHealth() {
 }
 
 updateTtsControls(false);
+applyIntegrationParams();
 initHealth();
 tryRestore();
